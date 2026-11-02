@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kios Bang Ipul - POS System</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+  <!-- HALAMAN LOGIN (Muncul jika belum login) -->
+  <div id="login-section" class="container mt-5" style="max-width: 400px; display: none;">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="text-center mb-4">🏪 KIOS BANG IPUL</h3>
+        <p class="text-center text-muted mb-4">Silakan login untuk masuk ke sistem</p>
+        
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" id="loginUsername" placeholder="Contoh: admin / kasir">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" id="loginPassword" placeholder="Password">
+        </div>
+        <button class="btn btn-primary w-100 mb-3" onclick="prosesLogin()">Login</button>
+        <button class="btn btn-outline-secondary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#configModal">⚙️ Atur URL Backend</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APLIKASI UTAMA (Muncul setelah berhasil login) -->
+  <div id="app-section" style="display: none;">
+    <nav class="navbar navbar-dark bg-dark shadow-sm px-3">
+      <span class="navbar-brand mb-0 h1">🏪 KIOS BANG IPUL</span>
+      <div class="d-flex align-items-center gap-3">
+        <span class="text-white small" id="user-info">Halo, User</span>
+        <button class="btn btn-outline-danger btn-sm" onclick="logout()">Logout</button>
+      </div>
+    </nav>
+
+    <div class="container my-4">
+      <!-- Tab Navigasi -->
+      <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="kasir-tab" data-bs-toggle="tab" data-bs-target="#kasir" type="button">Kasir (POS)</button>
+        </li>
+        <li class="nav-item" role="presentation" id="nav-item-produk">
+          <button class="nav-link" id="produk-tab" data-bs-toggle="tab" data-bs-target="#produk" type="button">Kelola Produk</button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="myTabContent">
+        <!-- TAB KASIR -->
+        <div class="tab-pane fade show active" id="kasir" role="tabpanel">
+          <div class="row">
+            <div class="col-md-7">
+              <div class="card shadow-sm mb-3">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                  <span>Daftar Produk</span>
+                  <button class="btn btn-sm btn-light" onclick="muatDataProduk()">🔄 Refresh</button>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                      <thead>
+                        <tr>
+                          <th>Nama</th>
+                          <th>Harga</th>
+                          <th>Stok</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tabel-produk-kasir">
+                        <tr><td colspan="4" class="text-center text-muted">Memuat data...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-5">
+              <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">Keranjang Belanja</div>
+                <div class="card-body">
+                  <ul class="list-group mb-3" id="list-keranjang">
+                    <li class="list-group-item text-muted text-center">Keranjang kosong</li>
+                  </ul>
+                  <h5>Total: Rp <span id="total-harga">0</span></h5>
+                  <button class="btn btn-success w-100 mt-2" onclick="prosesCheckout()">Bayar & Selesaikan</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB KELOLA PRODUK (Hanya untuk Admin) -->
+        <div class="tab-pane fade" id="produk" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">Tambah Produk Baru</div>
+            <div class="card-body">
+              <form id="form-tambah-produk" onsubmit="simpanProdukBaru(event)">
+                <div class="mb-3">
+                  <label class="form-label">Nama Barang</label>
+                  <input type="text" class="form-control" id="namaBarang" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Harga Jual (Rp)</label>
+                  <input type="number" class="form-control" id="hargaBarang" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Stok Awal</label>
+                  <input type="number" class="form-control" id="stokBarang" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Simpan Produk</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PENGATURAN URL -->
+  <div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pengaturan URL Google Apps Script</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Paste URL Web App Anda di sini:</label>
+            <input type="text" class="form-control" id="inputUrl" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-primary" onclick="simpanUrlBackend()">Simpan URL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS & Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let WEB_APP_URL = localStorage.getItem("kios_bang_ipul_url") || "";
+    let currentUser = JSON.parse(localStorage.getItem("kios_current_user")) || null;
+    let produkData = [];
+    let keranjang = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("inputUrl").value = WEB_APP_URL;
+      cekSesiLogin();
+    });
+
+    function cekSesiLogin() {
+      if (!WEB_APP_URL) {
+        document.getElementById("login-section").style.display = "block";
+        alert("Silakan atur URL Backend terlebih dahulu melalui tombol di bawah.");
+        return;
+      }
+
+      if (currentUser) {
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("app-section").style.display = "block";
+        document.getElementById("user-info").innerText = `${currentUser.nama} (${currentUser.role})`;
+        
+        // Atur hak akses berdasarkan role
+        if (currentUser.role !== "Admin") {
+          document.getElementById("nav-item-produk").style.display = "none"; // Sembunyikan menu kelola produk jika bukan admin
+        }
+        muatDataProduk();
+      } else {
+        document.getElementById("login-section").style.display = "block";
+        document.getElementById("app-section").style.display = "none";
+      }
+    }
+
+    function simpanUrlBackend() {
+      let url = document.getElementById("inputUrl").value.trim();
+      if (!url) {
+        alert("URL tidak boleh kosong!");
+        return;
+      }
+      localStorage.setItem("kios_bang_ipul_url", url);
+      WEB_APP_URL = url;
+      alert("URL berhasil disimpan!");
+      let modal = bootstrap.Modal.getInstance(document.getElementById('configModal'));
+      modal.hide();
+      cekSesiLogin();
+    }
+
+    function prosesLogin() {
+      let user = document.getElementById("loginUsername").value.trim();
+      let pass = document.getElementById("loginPassword").value.trim();
+
+      if (!user || !pass) {
+        alert("Username dan Password harus diisi!");
+        return;
+      }
+
+      fetch(`${WEB_APP_URL}?action=login&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            currentUser = res.user;
+            localStorage.setItem("kios_current_user", JSON.stringify(currentUser));
+            cekSesiLogin();
+          } else {
+            alert(res.message);
+          }
+        })
+        .catch(err => alert("Gagal terhubung ke server: " + err));
+    }
+
+    function logout() {
+      localStorage.removeItem("kios_current_user");
+      currentUser = null;
+      document.getElementById("loginUsername").value = "";
+      document.getElementById("loginPassword").value = "";
+      cekSesiLogin();
+    }
+
+    function muatDataProduk() {
+      fetch(`${WEB_APP_URL}?action=getProduk`)
+        .then(response => response.json())
+        .then(data => {
+          produkData = data;
+          let htmlKasir = "";
+          if (data.length === 0) {
+            htmlKasir = `<tr><td colspan="4" class="text-center">Belum ada produk.</td></tr>`;
+          } else {
+            data.forEach(p => {
+              htmlKasir += `
+                <tr>
+                  <td>${p.nama}</td>
+                  <td>Rp ${p.harga.toLocaleString()}</td>
+                  <td><span class="badge ${p.stok > 5 ? 'bg-success' : 'bg-danger'}">${p.stok}</span></td>
+                  <td><button class="btn btn-sm btn-outline-primary" ${p.stok <= 0 ? 'disabled' : ''} onclick="tambahKeKeranjang('${p.id}')">Tambah</button></td>
+                </tr>`;
+            });
+          }
+          document.getElementById("tabel-produk-kasir").innerHTML = htmlKasir;
+        })
+        .catch(err => console.error(err));
+    }
+
+    function tambahKeKeranjang(id) {
+      let produk = produkData.find(p => p.id === id);
+      let itemExist = keranjang.find(item => item.id === id);
+
+      if (itemExist) {
+        if (itemExist.qty < produk.stok) {
+          itemExist.qty++;
+        } else {
+          alert("Stok tidak mencukupi!");
+          return;
+        }
+      } else {
+        keranjang.push({ id: produk.id, nama: produk.nama, harga: produk.harga, qty: 1 });
+      }
+      renderKeranjang();
+    }
+
+    function renderKeranjang() {
+      let html = "";
+      let total = 0;
+      if (keranjang.length === 0) {
+        html = `<li class="list-group-item text-muted text-center">Keranjang kosong</li>`;
+      } else {
+        keranjang.forEach((item, index) => {
+          total += (item.harga * item.qty);
+          html += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="my-0">${item.nama}</h6>
+                <small class="text-muted">${item.qty} x Rp ${item.harga.toLocaleString()}</small>
+              </div>
+              <button class="btn btn-sm btn-danger" onclick="hapusItemKeranjang(${index})">&times;</button>
+            </li>`;
+        });
+      }
+      document.getElementById("list-keranjang").innerHTML = html;
+      document.getElementById("total-harga").innerText = total.toLocaleString();
+    }
+
+    function hapusItemKeranjang(index) {
+      keranjang.splice(index, 1);
+      renderKeranjang();
+    }
+
+    function simpanProdukBaru(e) {
+      e.preventDefault();
+      let nama = document.getElementById("namaBarang").value;
+      let harga = document.getElementById("hargaBarang").value;
+      let stok = document.getElementById("stokBarang").value;
+
+      let url = `${WEB_APP_URL}?action=tambahProduk&nama=${encodeURIComponent(nama)}&harga=${harga}&stok=${stok}`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(res => {
+          alert(res.message);
+          document.getElementById("form-tambah-produk").reset();
+          muatDataProduk();
+        })
+        .catch(err => alert("Gagal menyimpan produk: " + err));
+    }
+
+    function prosesCheckout() {
+      if (keranjang.length === 0) {
+        alert("Keranjang masih kosong!");
+        return;
+      }
+
+      let itemsStr = encodeURIComponent(JSON.stringify(keranjang));
+      let url = `${WEB_APP_URL}?action=simpanTransaksi&items=${itemsStr}`;
+
+      fetch(url)
+        .then(res => res.json())
+        .then(res => {
+          alert(res.message + " (ID: " + res.idTrx + ")");
+          keranjang = [];
+          renderKeranjang();
+          muatDataProduk();
+        })
+        .catch(err => alert("Gagal memproses transaksi: " + err));
+    }
+  </script>
+</body>
+</html>
